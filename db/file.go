@@ -9,7 +9,7 @@ import (
 func OnFileUploadFinished(filehash string, filename string, filesize int64, fileaddr string) bool {
 	stmt, err := mydb.DBConn().Prepare(
 		"insert ignore into tbl_file (`file_sha1`, `file_name`, `file_size`, `file_addr`, `status`)" +
-			"`file_sha1`, `file_name`, `file_size`, `file_addr`, `status`(?,?,?,?,1)")
+			"VALUES(?,?,?,?,1)")
 	if err != nil {
 		fmt.Println("Failed to prepare statement, err:" + err.Error())
 		return false

@@ -43,7 +43,7 @@ func GetFIleMetaDB(filesha1 string) (FileMeta, error) {
 		Location: tfile.FileAddr.String,
 	}
 
-	return fmeta
+	return fmeta, nil
 }
 
 // UpdateFileMeta: 通过sha1值i获取文件元信息
