@@ -11,7 +11,7 @@ import (
 var db *sql.DB
 
 func init() {
-	sql.Open("mysql", "root:root@tcp(localhost:3306)/filestore_server?charset=utf8")
+	db, _ = sql.Open("mysql", "root:root@tcp(localhost:3306)/filestore_server?charset=utf8")
 	db.SetMaxOpenConns(1000)
 	err := db.Ping()
 	if err != nil {
