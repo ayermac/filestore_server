@@ -6,12 +6,14 @@ import (
 	"../util"
 	"encoding/json"
 	"fmt"
+	"gopkg.in/amz.v1/s3"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+	"../store/ceph"
 )
 
 // 处理文件上传
@@ -56,7 +58,16 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 		newFile.Seek(0, 0)
 		fileMeta.FileSha1 = util.FileSha1(newFile)
-		//meta.UpdateFileMeta(fileMeta)
+
+		// 同时将文件写入到ceph存储
+		newFile.Seek(0, 0)
+		data, _ := ioutil.ReadAll(newFile)
+		bucket := ceph.GetCephBucket("userfile")
+		cephPath := "/ceph/" + fileMeta.FileSha1
+		_ = bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
+		fileMeta.Location = cephPath
+
+		_ = meta.UpdateFileMetaDB(fileMeta)
 		// 更新用户文件表记录
 		r.ParseForm()
 		username := r.Form.Get("username")

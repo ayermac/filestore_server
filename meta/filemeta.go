@@ -24,8 +24,8 @@ func UpdateFileMeta(fmeta FileMeta) {
 	fileMetas[fmeta.FileSha1] = fmeta
 }
 
-// UpdateFIleMetaDB: 新增/更新文件元信息到MySQL中
-func UpdateFIleMetaDB(fmeta FileMeta) bool {
+// UpdateFileMetaDB: 新增/更新文件元信息到MySQL中
+func UpdateFileMetaDB(fmeta FileMeta) bool {
 	return mydb.OnFileUploadFinished(fmeta.FileSha1, fmeta.FileName, fmeta.FileSize, fmeta.Location)
 }
 
