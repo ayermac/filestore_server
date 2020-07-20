@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./handler"
+	"../../handler"
 	"fmt"
 	"net/http"
 	"os"
