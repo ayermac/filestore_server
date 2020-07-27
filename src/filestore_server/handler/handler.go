@@ -1,10 +1,11 @@
 package handler
 
 import (
-	dblayer "../db"
-	"../meta"
-	"../util"
 	"encoding/json"
+	"filestore_server/db"
+	meta2 "filestore_server/meta"
+	ceph2 "filestore_server/store/ceph"
+	util2 "filestore_server/util"
 	"fmt"
 	"gopkg.in/amz.v1/s3"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-	"../store/ceph"
 )
 
 // 处理文件上传
@@ -36,7 +36,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		defer file.Close()
 
-		fileMeta := meta.FileMeta{
+		fileMeta := meta2.FileMeta{
 			FileName: head.Filename,
 			Location: "./tmp/" + head.Filename,
 			UploadAt: time.Now().Format("2006-01-02 15:04:05"),
@@ -57,21 +57,21 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		newFile.Seek(0, 0)
-		fileMeta.FileSha1 = util.FileSha1(newFile)
+		fileMeta.FileSha1 = util2.FileSha1(newFile)
 
 		// 同时将文件写入到ceph存储
 		newFile.Seek(0, 0)
 		data, _ := ioutil.ReadAll(newFile)
-		bucket := ceph.GetCephBucket("userfile")
+		bucket := ceph2.GetCephBucket("userfile")
 		cephPath := "/ceph/" + fileMeta.FileSha1
 		_ = bucket.Put(cephPath, data, "octet-stream", s3.PublicRead)
 		fileMeta.Location = cephPath
 
-		_ = meta.UpdateFileMetaDB(fileMeta)
+		_ = meta2.UpdateFileMetaDB(fileMeta)
 		// 更新用户文件表记录
 		r.ParseForm()
 		username := r.Form.Get("username")
-		suc := dblayer.OnUserFileUploadFinished(username, fileMeta.FileSha1,
+		suc := db.OnUserFileUploadFinished(username, fileMeta.FileSha1,
 			fileMeta.FileName, fileMeta.FileSize)
 		if suc {
 			http.Redirect(w, r, "/static/view/home.html", http.StatusFound)
@@ -91,7 +91,7 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 
 	filehash := r.Form["filehash"][0]
 	//fMeta := meta.GetFileMeta(filehash)
-	fMeta, err := meta.GetFIleMetaDB(filehash)
+	fMeta, err := meta2.GetFIleMetaDB(filehash)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -108,7 +108,7 @@ func GetFileMetaHandler(w http.ResponseWriter, r *http.Request) {
 func DownloadHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	fsha1 := r.Form.Get("filehash")
-	fm := meta.GetFileMeta(fsha1)
+	fm := meta2.GetFileMeta(fsha1)
 
 	f, err := os.Open(fm.Location)
 
@@ -144,9 +144,9 @@ func FileMetaUpdateHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	curFileMeta := meta.GetFileMeta(fileSha1)
+	curFileMeta := meta2.GetFileMeta(fileSha1)
 	curFileMeta.FileName = newFileName
-	meta.UpdateFileMeta(curFileMeta)
+	meta2.UpdateFileMeta(curFileMeta)
 
 	w.WriteHeader(http.StatusOK)
 
@@ -165,10 +165,10 @@ func FileDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	filesha1 := r.Form.Get("filehash")
 
-	fMeta := meta.GetFileMeta(filesha1)
+	fMeta := meta2.GetFileMeta(filesha1)
 	os.Remove(fMeta.Location)
 
-	meta.RemoveFileMeta(filesha1)
+	meta2.RemoveFileMeta(filesha1)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -179,7 +179,7 @@ func FileQueryHandler(w http.ResponseWriter, r *http.Request) {
 	limitCnt, _ := strconv.Atoi(r.Form.Get("limit"))
 	username := r.Form.Get("username")
 	//fileMetas, _ := meta.GetLastFileMetasDB(limitCnt)
-	userFiles, err := dblayer.QueryUserFileMetas(username, limitCnt)
+	userFiles, err := db.QueryUserFileMetas(username, limitCnt)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -202,7 +202,7 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request)  {
 	filesize, _ := strconv.Atoi(r.Form.Get("filesize"))
 
 	//2.从文件表中查询相同hash的文件记录
-	fileMeta, err := meta.GetFIleMetaDB(filehash)
+	fileMeta, err := meta2.GetFIleMetaDB(filehash)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -210,7 +210,7 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request)  {
 	}
 	//3.查不到记录则返回妙传失败
 	if fileMeta == nil {
-		resp := util.RespMsg{
+		resp := util2.RespMsg{
 			Code: -1,
 			Msg: "秒传失败，请访问普通上传接口",
 		}
@@ -219,16 +219,16 @@ func TryFastUploadHandler(w http.ResponseWriter, r *http.Request)  {
 	}
 
 	//4.上传过则将文件信息写入用户文件表，返回成功
-	suc := dblayer.OnUserFileUploadFinished(username, filehash, filename, int64(filesize))
+	suc := db.OnUserFileUploadFinished(username, filehash, filename, int64(filesize))
 	if suc {
-		resp := util.RespMsg{
+		resp := util2.RespMsg{
 			Code: 0,
 			Msg: "秒传成功",
 		}
 		w.Write(resp.JSONBytes())
 		return
 	} else {
-		resp := util.RespMsg{
+		resp := util2.RespMsg{
 			Code: -2,
 			Msg: "秒传失败，稍后重试",
 		}

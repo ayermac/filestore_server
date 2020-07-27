@@ -1,7 +1,7 @@
 package meta
 
 import (
-	mydb "../db"
+	"filestore_server/db"
 )
 
 // FileMeta: 文件元信息结构
@@ -26,12 +26,12 @@ func UpdateFileMeta(fmeta FileMeta) {
 
 // UpdateFileMetaDB: 新增/更新文件元信息到MySQL中
 func UpdateFileMetaDB(fmeta FileMeta) bool {
-	return mydb.OnFileUploadFinished(fmeta.FileSha1, fmeta.FileName, fmeta.FileSize, fmeta.Location)
+	return db.OnFileUploadFinished(fmeta.FileSha1, fmeta.FileName, fmeta.FileSize, fmeta.Location)
 }
 
 // GetFIleMetaDB: 从MySQL获取文件元信息
 func GetFIleMetaDB(filesha1 string) (*FileMeta, error) {
-	tfile, err := mydb.GetFileMeta(filesha1)
+	tfile, err := db.GetFileMeta(filesha1)
 	if err != nil {
 		return nil, err
 	}

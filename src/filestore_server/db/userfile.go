@@ -1,7 +1,7 @@
 package db
 
 import (
-	mydb "./mysql"
+	"filestore_server/db/mysql"
 	"fmt"
 	"time"
 )
@@ -16,7 +16,7 @@ type UserFile struct {
 }
 
 func OnUserFileUploadFinished(username, filehash, filename string, filesize int64) bool {
-	stmt, err := mydb.DBConn().Prepare(
+	stmt, err := mysql.DBConn().Prepare(
 		"insert ignore into tbl_user_file (`user_name`,`file_sha1`,`file_name`," +
 			"`file_size`,`upload_at`) values (?,?,?,?,?)")
 	if err != nil {
@@ -33,7 +33,7 @@ func OnUserFileUploadFinished(username, filehash, filename string, filesize int6
 
 //QueryUserFIleMetas批量獲取文件信息
 func QueryUserFileMetas(username string, limit int) ([]UserFile, error) {
-	stmt, err := mydb.DBConn().Prepare(
+	stmt, err := mysql.DBConn().Prepare(
 		"SELECT file_sha1, file_name, file_size, upload_at, last_update FROM " +
 			"tbl_user_file WHERE user_name = ? limit ?")
 	if err != nil {

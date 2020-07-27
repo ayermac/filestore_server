@@ -1,7 +1,7 @@
 package db
 
 import (
-	mydb "./mysql"
+	"filestore_server/db/mysql"
 
 	//"database/sql"
 	"fmt"
@@ -19,7 +19,7 @@ type User struct {
 
 // UserSignUp通过用户名和密码完成user表注册
 func UserSignUp(username string, passwd string) bool {
-	stmt, err := mydb.DBConn().Prepare(
+	stmt, err := mysql.DBConn().Prepare(
 		"insert ignore into tbl_user (`user_name`, `user_pwd`)" +
 			"VALUES(?,?)")
 	if err != nil {
@@ -43,7 +43,7 @@ func UserSignUp(username string, passwd string) bool {
 
 // UserSignin : 判断密码是否一致
 func UserSignin(username string, encpwd string) bool {
-	stmt, err := mydb.DBConn().Prepare("select * from tbl_user where user_name=? limit 1")
+	stmt, err := mysql.DBConn().Prepare("select * from tbl_user where user_name=? limit 1")
 	if err != nil {
 		fmt.Println(err.Error())
 		return false
@@ -59,7 +59,7 @@ func UserSignin(username string, encpwd string) bool {
 		return false
 	}
 
-	pRows := mydb.ParseRows(rows)
+	pRows := mysql.ParseRows(rows)
 	if len(pRows) > 0 && string(pRows[0]["user_pwd"].([]byte)) == encpwd {
 		return true
 	}
@@ -68,7 +68,7 @@ func UserSignin(username string, encpwd string) bool {
 
 // UpdateToken : 刷新用户登录的token
 func UpdateToken(username string, token string) bool {
-	stmt, err := mydb.DBConn().Prepare(
+	stmt, err := mysql.DBConn().Prepare(
 		"replace into tbl_user_token (`user_name`,`user_token`) values (?,?)")
 	if err != nil {
 		fmt.Println(err.Error())
@@ -88,7 +88,7 @@ func UpdateToken(username string, token string) bool {
 func GetUserInfo(username string) (User, error) {
 	user := User{}
 
-	stmt, err := mydb.DBConn().Prepare(
+	stmt, err := mysql.DBConn().Prepare(
 		"select user_name,signup_at from tbl_user where user_name=? limit 1")
 	if err != nil {
 		fmt.Println(err.Error())

@@ -1,7 +1,7 @@
 package config
 
 import (
-	cmn "filestore-server/common"
+	cmn "filestore_server/common"
 )
 
 const (

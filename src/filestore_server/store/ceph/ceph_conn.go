@@ -8,7 +8,7 @@ var cephConn *s3.S3
 
 func GetCephConnection() *s3.S3 {
 	if cephConn != nil {
-		return  cephConn
+		return cephConn
 	}
 	//1. 初始化ceph的一些信息
 

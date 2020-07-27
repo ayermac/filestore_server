@@ -1,13 +1,13 @@
 package main
 
 import (
-	"../store/ceph"
+	ceph2 "filestore_server/store/ceph"
 	"fmt"
 	"os"
 )
 
 func main() {
-	bucket := ceph.GetCephBucket("userfile")
+	bucket := ceph2.GetCephBucket("userfile")
 
 	d, _ := bucket.Get("/ceph/866cc7c87c9b612dd8904d2c5dd07d6f6c22b834")
 	tmpFile, _ := os.Create("/tmp/test_file")

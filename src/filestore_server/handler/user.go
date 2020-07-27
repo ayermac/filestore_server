@@ -1,8 +1,8 @@
 package handler
 
 import (
-	dblayer "../db"
-	"../util"
+	"filestore_server/db"
+	util2 "filestore_server/util"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -32,8 +32,8 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		enc_passwd := util.Sha1([]byte(passwd + pwdSalt))
-		suc := dblayer.UserSignUp(username, enc_passwd)
+		enc_passwd := util2.Sha1([]byte(passwd + pwdSalt))
+		suc := db.UserSignUp(username, enc_passwd)
 
 		if suc {
 			w.Write([]byte("SUCCESS"))
@@ -60,10 +60,10 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.Form.Get("username")
 	password := r.Form.Get("password")
 
-	encPasswd := util.Sha1([]byte(password + pwdSalt))
+	encPasswd := util2.Sha1([]byte(password + pwdSalt))
 
 	// 1. 校验用户名及密码
-	pwdChecked := dblayer.UserSignin(username, encPasswd)
+	pwdChecked := db.UserSignin(username, encPasswd)
 	if !pwdChecked {
 		w.Write([]byte("FAILED"))
 		return
@@ -71,7 +71,7 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 2. 生成访问凭证(token)
 	token := GenToken(username)
-	upRes := dblayer.UpdateToken(username, token)
+	upRes := db.UpdateToken(username, token)
 	if !upRes {
 		w.Write([]byte("FAILED"))
 		return
@@ -79,7 +79,7 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 3. 登录成功后重定向到首页
 	//w.Write([]byte("http://" + r.Host + "/static/view/home.html"))
-	resp := util.RespMsg{
+	resp := util2.RespMsg{
 		Code: 0,
 		Msg:  "OK",
 		Data: struct {
@@ -110,14 +110,14 @@ func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	// 3. 查询用户信息
-	user, err := dblayer.GetUserInfo(username)
+	user, err := db.GetUserInfo(username)
 	if err != nil {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
 	// 4. 组装并且响应用户数据
-	resp := util.RespMsg{
+	resp := util2.RespMsg{
 		Code: 0,
 		Msg:  "OK",
 		Data: user,
@@ -129,7 +129,7 @@ func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 func GenToken(username string) string {
 	// 40位字符:md5(username+timestamp+token_salt)+timestamp[:8]
 	ts := fmt.Sprintf("%x", time.Now().Unix())
-	tokenPrefix := util.MD5([]byte(username + ts + "_tokensalt"))
+	tokenPrefix := util2.MD5([]byte(username + ts + "_tokensalt"))
 	return tokenPrefix + ts[:8]
 }
 

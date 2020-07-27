@@ -1,9 +1,9 @@
 package mq
 
 import (
-	"../config"
-	"log"
+	config2 "filestore_server/config"
 	"github.com/streadway/amqp"
+	"log"
 )
 
 var conn *amqp.Connection
@@ -15,7 +15,7 @@ func initChannel() bool {
 		return true
 	}
 	//2.获得rabbitmq的一个连接
-	conn, err := amqp.Dial(config.RabbitURL)
+	conn, err := amqp.Dial(config2.RabbitURL)
 	if err != nil {
 		log.Println(err.Error())
 		return false

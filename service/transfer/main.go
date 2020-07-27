@@ -1,13 +1,13 @@
 package main
 
 import (
-	"../../mq"
-	"../../config"
+	dblayer "filestore_server/db"
 	"bufio"
 	"encoding/json"
+	config2 "filestore_server/config"
+	mq2 "filestore_server/mq"
 	"log"
 	"os"
-	dblayer "../../db"
 )
 
 // ProcessTransfer : 处理文件转移
@@ -15,7 +15,7 @@ func ProcessTransfer(msg []byte) bool {
 	log.Println(string(msg))
 
 	//1.解析msg
-	pubData := mq.TransferData{}
+	pubData := mq2.TransferData{}
 	err := json.Unmarshal(msg, &pubData)
 	if err != nil {
 		log.Println(err.Error())
@@ -45,13 +45,13 @@ func ProcessTransfer(msg []byte) bool {
 }
 
 func main() {
-	if !config.AsyncTransferEnable {
+	if !config2.AsyncTransferEnable {
 		log.Println("异步转移文件功能目前被禁用，请检查相关配置")
 		return
 	}
 	log.Println("文件转移服务启动中，开始监听转移任务队列...")
-	mq.StartConsume(
-		config.TransOSSQueueName,
+	mq2.StartConsume(
+		config2.TransOSSQueueName,
 		"transfer_oss",
 		ProcessTransfer)
 }
